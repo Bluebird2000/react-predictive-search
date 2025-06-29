@@ -1,0 +1,25 @@
+{
+  "name": "react-predictive-search",
+  "version": "1.0.0",
+  "description": "A fully‑typed React + TypeScript predictive/autocomplete search component  with typo‑tolerant fuzzy matching, keyboard navigation, recent‑search history,  dynamic suggestions, and pluggable data‑sources (static, Algolia, Elasticsearch).  -----------------------------------------------------------------------------",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bluebird2000/react-predictive-search.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Bluebird2000/react-predictive-search/issues"
+  },
+  "homepage": "https://github.com/Bluebird2000/react-predictive-search#readme",
+  "dependencies": {
+    "algoliasearch": "^5.29.0",
+    "fuse.js": "^7.1.0",
+    "react": "^19.1.0"
+  }
+}
