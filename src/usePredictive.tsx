@@ -7,7 +7,12 @@ export function usePredictive<T extends SearchItem = SearchItem>(
   {
     debounce = 150,
     historyLimit = 5,
-  }: { debounce?: number; historyLimit?: number } = {}
+    enablePartialMatchFallback = true,
+  }: {
+    debounce?: number;
+    historyLimit?: number;
+    enablePartialMatchFallback?: boolean;
+  } = {}
 ) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<T[]>([]);
@@ -16,6 +21,7 @@ export function usePredictive<T extends SearchItem = SearchItem>(
   const [activeIndex, setActiveIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const timer = useRef<NodeJS.Timeout>();
 
   const select = useCallback(
@@ -27,6 +33,13 @@ export function usePredictive<T extends SearchItem = SearchItem>(
     },
     [historyLimit]
   );
+
+  const clearQuery = () => {
+    setQuery("");
+    setResults([]);
+    setActiveIndex(-1);
+    setIsOpen(false);
+  };
 
   useEffect(() => {
     if (!query.trim()) {
@@ -40,21 +53,36 @@ export function usePredictive<T extends SearchItem = SearchItem>(
 
   useEffect(() => {
     if (!query.trim()) return;
+
     clearTimeout(timer.current);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     timer.current = setTimeout(async () => {
       try {
         setLoading(true);
         setError(null);
         const res = await source.search(query);
-        setResults(res);
-        setIsOpen(true);
+        if (!controller.signal.aborted) {
+          if (res.length === 0 && enablePartialMatchFallback) {
+            // TODO: Try partial match logic (e.g., remove last word or char)
+            const fallback = await source.search(
+              query.slice(0, query.length - 1)
+            );
+            setResults(fallback);
+          } else {
+            setResults(res);
+          }
+          setIsOpen(true);
+        }
       } catch (err) {
-        setError("Search failed");
+        if (!controller.signal.aborted) setError("Search failed");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }, debounce);
-  }, [query, source, debounce]);
+  }, [query, source, debounce, enablePartialMatchFallback]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent | React.KeyboardEvent<HTMLInputElement>) => {
@@ -68,9 +96,9 @@ export function usePredictive<T extends SearchItem = SearchItem>(
         setActiveIndex((i) => (i - 1 + results.length) % results.length);
       } else if (e.key === "Enter") {
         e.preventDefault();
-        if (results[activeIndex]) {
-          select(results[activeIndex]);
-        }
+        const item =
+          results[activeIndex] || (results.length === 1 && results[0]);
+        if (item) select(item);
       } else if (e.key === "Escape") {
         setIsOpen(false);
       }
@@ -93,7 +121,9 @@ export function usePredictive<T extends SearchItem = SearchItem>(
     setActiveIndex,
     onKeyDown,
     select,
+    clearQuery,
     loading,
     error,
   };
 }
+

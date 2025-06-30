@@ -22,6 +22,9 @@ export function PredictiveSearch<T extends SearchItem = SearchItem>({
     setActiveIndex,
     onKeyDown,
     select,
+    clearQuery,
+    loading,
+    error,
   } = usePredictive(dataSource);
 
   const handleSelect = (item: T) => {
@@ -30,21 +33,42 @@ export function PredictiveSearch<T extends SearchItem = SearchItem>({
   };
 
   return (
-    <div className={`relative w-full max-w-md ${className}`}>
+    <div
+      className={`relative w-full max-w-md ${className}`}
+      role="combobox"
+      aria-expanded={isOpen}
+    >
       <input
         type="text"
         value={query}
         placeholder={placeholder}
         onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={(e) => onKeyDown(e.nativeEvent)}
+        onKeyDown={onKeyDown}
         onFocus={() => query && setActiveIndex(-1)}
+        aria-activedescendant={
+          activeIndex >= 0 ? `result-${activeIndex}` : undefined
+        }
         className="w-full rounded-2xl border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
-
-      {isOpen && results.length > 0 && (
+      {query && (
+        <button
+          onClick={clearQuery}
+          className="absolute right-3 top-2.5 text-sm text-gray-500"
+        >
+          ×
+        </button>
+      )}
+      {isOpen && (
         <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
+          {loading && (
+            <li className="px-4 py-2 text-gray-500 italic">Loading...</li>
+          )}
+          {!loading && results.length === 0 && (
+            <li className="px-4 py-2 text-gray-500 italic">No results found</li>
+          )}
           {results.map((item, idx) => (
             <li
+              id={`result-${idx}`}
               key={item.id}
               onMouseEnter={() => setActiveIndex(idx)}
               onMouseDown={(e) => {
@@ -60,6 +84,7 @@ export function PredictiveSearch<T extends SearchItem = SearchItem>({
           ))}
         </ul>
       )}
+      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
     </div>
   );
 }
