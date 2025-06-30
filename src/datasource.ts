@@ -1,6 +1,7 @@
 import Fuse from "fuse.js";
 import type { IFuseOptions } from "fuse.js";
-import { algoliasearch } from "algoliasearch";
+import { algoliasearch, SearchClient } from "algoliasearch";
+
 import { DataSource, SearchItem } from "./types";
 
 export const createStaticDataSource = <T extends SearchItem = SearchItem>(
@@ -30,7 +31,7 @@ export const createAlgoliaDataSource = <T extends SearchItem = SearchItem>(
   apiKey: string,
   indexName: string
 ): DataSource<T> => {
-  const client = algoliasearch(appId, apiKey);
+  const client: SearchClient = algoliasearch(appId, apiKey);
   return {
     async search(query: string) {
       if (!query) return [];
