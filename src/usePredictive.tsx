@@ -4,37 +4,55 @@ import { DataSource, SearchItem } from "./types";
 
 export function usePredictive<T extends SearchItem = SearchItem>(
   source: DataSource<T>,
-  { debounce = 150 }: { debounce?: number } = {}
+  {
+    debounce = 150,
+    historyLimit = 5,
+  }: { debounce?: number; historyLimit?: number } = {}
 ) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<T[]>([]);
-  const [history, setHistory] = useState<string[]>(getHistory());
+  const [history, setHistory] = useState<string[]>(getHistory(historyLimit));
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const timer = useRef<NodeJS.Timeout>();
 
-  const select = useCallback((item: T) => {
-    saveQueryToHistory(item.label);
-    setHistory(getHistory());
-    setQuery(item.label);
-    setIsOpen(false);
-  }, []);
+  const select = useCallback(
+    (item: T) => {
+      saveQueryToHistory(item.label);
+      setHistory(getHistory(historyLimit));
+      setQuery(item.label);
+      setIsOpen(false);
+    },
+    [historyLimit]
+  );
 
   useEffect(() => {
-    if (!query) {
+    if (!query.trim()) {
       setResults(
         history.map((q, i) => ({ id: `h${i}`, label: q } as unknown as T))
       );
+      setIsOpen(true);
+      return;
     }
   }, [query, history]);
 
   useEffect(() => {
-    if (!query) return;
+    if (!query.trim()) return;
     clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
-      const res = await source.search(query);
-      setResults(res);
-      setIsOpen(true);
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await source.search(query);
+        setResults(res);
+        setIsOpen(true);
+      } catch (err) {
+        setError("Search failed");
+      } finally {
+        setLoading(false);
+      }
     }, debounce);
   }, [query, source, debounce]);
 
@@ -75,5 +93,7 @@ export function usePredictive<T extends SearchItem = SearchItem>(
     setActiveIndex,
     onKeyDown,
     select,
+    loading,
+    error,
   };
 }
