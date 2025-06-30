@@ -36,10 +36,11 @@ export function PredictiveSearch<T extends SearchItem = SearchItem>({
         value={query}
         placeholder={placeholder}
         onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={onKeyDown}
+        onKeyDown={(e) => onKeyDown(e.nativeEvent)}
         onFocus={() => query && setActiveIndex(-1)}
         className="w-full rounded-2xl border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
+
       {isOpen && results.length > 0 && (
         <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
           {results.map((item, idx) => (

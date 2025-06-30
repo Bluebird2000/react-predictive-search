@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { getHistory, saveQueryToHistory } from "./history";
 import { DataSource, SearchItem } from "./types";
 
@@ -12,6 +12,13 @@ export function usePredictive<T extends SearchItem = SearchItem>(
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const timer = useRef<NodeJS.Timeout>();
+
+  const select = useCallback((item: T) => {
+    saveQueryToHistory(item.label);
+    setHistory(getHistory());
+    setQuery(item.label);
+    setIsOpen(false);
+  }, []);
 
   useEffect(() => {
     if (!query) {
@@ -32,8 +39,9 @@ export function usePredictive<T extends SearchItem = SearchItem>(
   }, [query, source, debounce]);
 
   const onKeyDown = useCallback(
-    (e: KeyboardEvent) => {
+    (e: KeyboardEvent | React.KeyboardEvent<HTMLInputElement>) => {
       if (!isOpen) return;
+
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setActiveIndex((i) => (i + 1) % results.length);
@@ -49,15 +57,14 @@ export function usePredictive<T extends SearchItem = SearchItem>(
         setIsOpen(false);
       }
     },
-    [isOpen, results, activeIndex]
+    [isOpen, results, activeIndex, select]
   );
 
-  const select = (item: T) => {
-    saveQueryToHistory(item.label);
-    setHistory(getHistory());
-    setQuery(item.label);
-    setIsOpen(false);
-  };
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => onKeyDown(e);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onKeyDown]);
 
   return {
     query,

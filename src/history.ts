@@ -5,7 +5,7 @@ interface HistoryRecord {
 }
 
 export function saveQueryToHistory(query: string) {
-  if (!query) return;
+  if (typeof window === "undefined" || !query) return;
   const entry: HistoryRecord = { q: query, ts: Date.now() };
   const arr: HistoryRecord[] = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
   const without = arr.filter((r) => r.q !== query);
